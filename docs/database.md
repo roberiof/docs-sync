@@ -69,9 +69,12 @@ A user can access a document if:
 
 Writing requires the owner or a collaborator with `role = 'editor'`.
 
-> To avoid recursion between the `documents` and `document_collaborators`
-> policies, the access check lives in a `SECURITY DEFINER` function
-> (`public.can_access_document`), called by the policies.
+> The `documents` policies check `owner_id` **directly off the row** (not via a
+> function that re-queries `documents`) so that `INSERT ... RETURNING` can see the
+> in-flight row. The collaborator branch queries `document_collaborators`, whose
+> own RLS lets a user read their own rows — no recursion. A `SECURITY DEFINER`
+> helper `public.is_document_owner(doc_id)` is used only by the
+> `document_collaborators` policies (it bypasses RLS to break the cycle).
 
 ## RLS policies (summary)
 
@@ -86,7 +89,7 @@ migrations under `supabase/migrations/`):
 
 ### `documents`
 
-- SELECT: `owner_id = auth.uid()` OR is a collaborator (via the access function).
+- SELECT: `owner_id = auth.uid()` OR is a collaborator (inline check on the row).
 - INSERT: `owner_id = auth.uid()`.
 - UPDATE: owner OR `editor` collaborator.
 - DELETE: owner only.
@@ -136,7 +139,8 @@ create trigger documents_set_updated_at
 supabase/migrations/
 ├── 0001_profiles.sql            # table + signup trigger + RLS
 ├── 0002_documents.sql           # table + updated_at trigger + indexes + RLS
-└── 0003_collaborators.sql       # table + can_access_document function + RLS
+├── 0003_collaborators.sql       # table + is_document_owner helper + RLS
+└── 0004_fix_document_select_policy.sql  # inline owner check (fixes INSERT…RETURNING)
 ```
 
 ## Front-end types

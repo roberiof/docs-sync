@@ -88,7 +88,7 @@ export interface Database {
     };
     Views: Record<never, never>;
     Functions: {
-      can_access_document: {
+      is_document_owner: {
         Args: { doc_id: string };
         Returns: boolean;
       };
