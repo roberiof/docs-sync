@@ -55,5 +55,5 @@ Portfolio project inspired by real-world corporate _AI workspace_ use cases
 
 ## Related documents
 
-- [`01-architecture.md`](./01-architecture.md) — architecture and responsibilities.
-- [`02-database.md`](./02-database.md) — Supabase schema and RLS.
+- [`architecture.md`](./architecture.md) — architecture and responsibilities.
+- [`database.md`](./database.md) — Supabase schema and RLS.

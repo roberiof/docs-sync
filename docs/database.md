@@ -41,7 +41,7 @@ created_at  timestamptz NOT NULL DEFAULT now()
 updated_at  timestamptz NOT NULL DEFAULT now()   -- maintained by trigger
 ```
 
-- `content` holds the Tiptap JSON (see decision in `01-architecture.md`).
+- `content` holds the Tiptap JSON (see decision in `architecture.md`).
 - `updated_at` maintained by a `BEFORE UPDATE` trigger (orders the dashboard by recency).
 - Index on `owner_id` (dashboard queries).
 
@@ -151,5 +151,5 @@ with derived domain types in `src/types/index.ts`.
 
 ## Related documents
 
-- [`00-overview.md`](./00-overview.md) — overview and scope.
-- [`01-architecture.md`](./01-architecture.md) — architecture and responsibilities.
+- [`overview.md`](./overview.md) — overview and scope.
+- [`architecture.md`](./architecture.md) — architecture and responsibilities.

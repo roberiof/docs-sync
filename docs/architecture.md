@@ -51,7 +51,7 @@ Yjs to collaborate, and periodically writes the state back to Supabase (autosave
 - **Auth**: email/password + OAuth. Session via cookies (SSR helpers).
 - **Postgres**: tables `documents`, `document_collaborators`, `profiles`.
 - **RLS**: ensures each user only reads/writes what they are allowed to.
-- See [`02-database.md`](./02-database.md).
+- See [`database.md`](./database.md).
 
 ### 4. Claude API
 
@@ -119,5 +119,5 @@ NEXT_PUBLIC_YWS_URL=              # e.g. ws://localhost:1234
 
 ## Related documents
 
-- [`00-overview.md`](./00-overview.md) — overview and scope.
-- [`02-database.md`](./02-database.md) — schema and RLS policies.
+- [`overview.md`](./overview.md) — overview and scope.
+- [`database.md`](./database.md) — schema and RLS policies.
