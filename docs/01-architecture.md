@@ -1,122 +1,123 @@
-# DocSync — Arquitetura
+# DocSync — Architecture
 
-## Princípio central: separar sincronização de persistência
+## Core principle: separate sync from persistence
 
-Dois canais distintos atuam sobre o mesmo documento:
+Two distinct channels act on the same document:
 
-- **y-websocket** cuida da **sincronização ao vivo** (estado efêmero, presença,
-  merge de edições concorrentes via CRDT). Não persiste nada.
-- **Supabase** cuida da **persistência** (estado durável: o documento salvo, auth,
-  metadados, colaboradores).
+- **y-websocket** handles **live sync** (ephemeral state, presence, merging of
+  concurrent edits via CRDT). It persists nothing.
+- **Supabase** handles **persistence** (durable state: the saved document, auth,
+  metadata, collaborators).
 
-O editor é a ponte: lê o estado inicial do Supabase, conecta ao Yjs para
-colaborar, e periodicamente grava o estado de volta no Supabase (auto-save).
+The editor is the bridge: it reads the initial state from Supabase, connects to
+Yjs to collaborate, and periodically writes the state back to Supabase (autosave).
 
 ```
-┌──────────┐   edições live    ┌──────────────────┐
-│ Browser  │ ◄──────────────►  │ y-websocket (Node)│  estado efêmero
-│ (Tiptap) │   (Yjs/CRDT)      └──────────────────┘  não persiste
+┌──────────┐   live edits      ┌──────────────────┐
+│ Browser  │ ◄──────────────►  │ y-websocket (Node)│  ephemeral state
+│ (Tiptap) │   (Yjs/CRDT)      └──────────────────┘  not persisted
 │          │
-│          │   load inicial    ┌──────────────────┐
-│          │ ◄──────────────   │ Supabase Postgres│  estado durável
-│          │   auto-save →     │  + Auth          │
+│          │   initial load    ┌──────────────────┐
+│          │ ◄──────────────   │ Supabase Postgres│  durable state
+│          │   autosave →      │  + Auth          │
 └────┬─────┘                   └──────────────────┘
-     │  texto selecionado
+     │  selected text
      ▼
-┌──────────────────┐  →  Claude API  →  sugestão volta pro editor
+┌──────────────────┐  →  Claude API  →  suggestion back to the editor
 │ /api/ai (route)  │
 └──────────────────┘
 ```
 
-## Componentes
+## Components
 
 ### 1. Next.js (App Router)
 
-- **Server Components** para carregar dados (documento, lista do dashboard) com
-  o cliente Supabase server-side (cookies/SSR).
-- **Client Components** para o editor (Tiptap/Yjs precisam do browser).
-- **Route Handler** `/api/ai` roda no server, guarda a `ANTHROPIC_API_KEY`,
-  fala com a Claude API. A chave nunca chega ao browser.
+- **Server Components** to load data (document, dashboard list) with the
+  server-side Supabase client (cookies/SSR).
+- **Client Components** for the editor (Tiptap/Yjs need the browser).
+- **Route Handler** `/api/ai` runs on the server, holds the `ANTHROPIC_API_KEY`,
+  and talks to the Claude API. The key never reaches the browser.
 
 ### 2. y-websocket server
 
-- Processo Node.js **separado** do Next.js (`y-websocket-server/server.js`).
-- Cada documento = uma "room" Yjs identificada pelo `document.id`.
-- Responsável só por relay/merge de updates e _awareness_ (cursores/presença).
-- Sem banco, sem auth pesada. Em produção, validar acesso à room é desejável
-  (fora do MVP; ver "Segurança").
+- A Node.js process **separate** from Next.js (`y-websocket-server/server.js`).
+- Each document = one Yjs "room" identified by `document.id`.
+- Responsible only for relaying/merging updates and _awareness_ (cursors/presence).
+- No database, no heavy auth. In production, validating room access is desirable
+  (out of MVP scope; see "Security").
 
 ### 3. Supabase
 
-- **Auth**: email/senha + OAuth. Sessão via cookies (SSR helpers).
-- **Postgres**: tabelas `documents`, `document_collaborators`, `profiles`.
-- **RLS**: garante que cada usuário só lê/escreve o que tem direito.
-- Ver [`02-database.md`](./02-database.md).
+- **Auth**: email/password + OAuth. Session via cookies (SSR helpers).
+- **Postgres**: tables `documents`, `document_collaborators`, `profiles`.
+- **RLS**: ensures each user only reads/writes what they are allowed to.
+- See [`02-database.md`](./02-database.md).
 
 ### 4. Claude API
 
-- Acessada só pelo route handler `/api/ai`.
-- Entrada: texto selecionado + tipo de ação (melhorar, resumir, continuar…).
-- Saída: texto sugerido, inserido no Tiptap no ponto da seleção.
+- Accessed only by the `/api/ai` route handler.
+- Input: selected text + action type (improve, summarize, continue…).
+- Output: suggested text, inserted into Tiptap at the selection point.
 
-## Camadas no código
+## Code layers
 
 ```
 src/
-├── app/            # rotas (server + client components)
+├── app/            # routes (server + client components)
 ├── components/     # UI: editor, dashboard, ui (shadcn)
 ├── lib/
-│   ├── supabase/   # client (browser), server (SSR), types gerados
-│   ├── yjs/        # provider y-websocket
-│   └── ai/         # wrapper da Claude API
+│   ├── supabase/   # client (browser), server (SSR), generated types
+│   ├── yjs/        # y-websocket provider
+│   └── ai/         # Claude API wrapper
 ├── hooks/          # useEditor, useCollaboration, useDocument
-└── types/          # tipos compartilhados do domínio
+└── types/          # shared domain types
 ```
 
-## Fluxo de dados do editor
+## Editor data flow
 
-1. Server Component (`/doc/[id]`) busca o documento no Supabase (RLS valida acesso).
-2. Passa o conteúdo inicial (JSON do Tiptap) para o Client Component do editor.
-3. `useCollaboration` cria o `Y.Doc` e conecta ao y-websocket (room = id do doc).
-4. Tiptap usa a extensão de Collaboration ligada ao `Y.Doc`.
-5. `useDocument` observa mudanças e dispara auto-save (debounce ~1–2s) no Supabase.
-6. Awareness do Yjs alimenta `CollaboratorsCursors`.
+1. The Server Component (`/doc/[id]`) fetches the document from Supabase (RLS checks access).
+2. It passes the initial content (Tiptap JSON) to the editor Client Component.
+3. `useCollaboration` creates the `Y.Doc` and connects to y-websocket (room = doc id).
+4. Tiptap uses the Collaboration extension bound to the `Y.Doc`.
+5. `useDocument` observes changes and triggers autosave (debounce ~1–2s) to Supabase.
+6. Yjs awareness feeds `CollaboratorsCursors`.
 
-### Sobre a "fonte da verdade"
+### On the "source of truth"
 
-- Enquanto há colaboradores conectados, o **Yjs é a fonte da verdade** do conteúdo.
-- O Supabase guarda o **último snapshot conhecido** (para load quando ninguém está
-  conectado e como backup durável).
-- Decisão de MVP: persistir o **JSON do Tiptap** (não o binário do Yjs). Simples de
-  inspecionar e renderizar. Trade-off documentado em "Decisões em aberto".
+- While collaborators are connected, **Yjs is the source of truth** for content.
+- Supabase keeps the **last known snapshot** (for loading when nobody is connected
+  and as a durable backup).
+- MVP decision: persist the **Tiptap JSON** (not the Yjs binary). Simple to inspect
+  and render. Trade-off documented in "Open decisions".
 
-## Variáveis de ambiente
+## Environment variables
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=        # só server-side, se necessário
-ANTHROPIC_API_KEY=                # só no route handler /api/ai
-NEXT_PUBLIC_YWS_URL=              # ex.: ws://localhost:1234
+SUPABASE_SERVICE_ROLE_KEY=        # server-side only, if needed
+ANTHROPIC_API_KEY=                # only in the /api/ai route handler
+NEXT_PUBLIC_YWS_URL=              # e.g. ws://localhost:1234
 ```
 
-## Segurança (notas)
+## Security (notes)
 
-- Chaves sensíveis (`ANTHROPIC_API_KEY`, service role) só no server.
-- RLS no Postgres é a barreira real de acesso a dados.
-- y-websocket no MVP é aberto por simplicidade; em produção, autenticar a conexão
-  (token na query/handshake) e checar permissão na room.
+- Sensitive keys (`ANTHROPIC_API_KEY`, service role) live on the server only.
+- Postgres RLS is the real data-access barrier.
+- In the MVP, y-websocket is open for simplicity; in production, authenticate the
+  connection (token in query/handshake) and check room permissions.
 
-## Decisões em aberto
+## Open decisions
 
-- **Persistir JSON do Tiptap vs. binário do Yjs.** MVP: JSON. Se o histórico/merge
-  offline virar requisito, migrar para snapshots binários do Yjs (`Y.encodeStateAsUpdate`).
-- **Quem dispara o auto-save com vários clientes.** Risco de gravações concorrentes.
-  MVP: cada cliente salva seu estado com debounce; aceitável pois o conteúdo converge
-  via Yjs. Melhoria futura: eleger um "leader" ou salvar via webhook do y-websocket.
-- **Hospedagem do y-websocket** (Railway/Fly/Render). Decidir no deploy.
+- **Persist Tiptap JSON vs. Yjs binary.** MVP: JSON. If history / strong offline
+  merge becomes a requirement, migrate to Yjs binary snapshots (`Y.encodeStateAsUpdate`).
+- **Who triggers autosave with multiple clients.** Risk of concurrent writes.
+  MVP: each client saves its state with debounce; acceptable because content
+  converges via Yjs. Future improvement: elect a "leader" or save via a
+  y-websocket webhook.
+- **y-websocket hosting** (Railway/Fly/Render). Decide at deploy time.
 
-## Documentos relacionados
+## Related documents
 
-- [`00-overview.md`](./00-overview.md) — visão geral e escopo.
-- [`02-database.md`](./02-database.md) — schema e políticas RLS.
+- [`00-overview.md`](./00-overview.md) — overview and scope.
+- [`02-database.md`](./02-database.md) — schema and RLS policies.

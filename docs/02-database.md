@@ -1,21 +1,21 @@
-# DocSync — Banco de Dados (Supabase)
+# DocSync — Database (Supabase)
 
-Usuários são gerenciados pelo **Supabase Auth** (`auth.users`). As tabelas abaixo
-ficam no schema `public` e referenciam `auth.users(id)`.
+Users are managed by **Supabase Auth** (`auth.users`). The tables below live in
+the `public` schema and reference `auth.users(id)`.
 
-## Visão geral das tabelas
+## Tables overview
 
-| Tabela                   | Para quê                                                        |
-| ------------------------ | --------------------------------------------------------------- |
-| `profiles`               | Dados públicos do usuário (nome, avatar) p/ cursores e listas.  |
-| `documents`              | O documento em si: título + conteúdo (JSON do Tiptap).          |
-| `document_collaborators` | Quem tem acesso a quê documento e com qual papel.               |
+| Table                    | Purpose                                                       |
+| ------------------------ | ------------------------------------------------------------- |
+| `profiles`               | Public user data (name, avatar) for cursors and lists.        |
+| `documents`              | The document itself: title + content (Tiptap JSON).           |
+| `document_collaborators` | Who has access to which document, and with what role.         |
 
-### Por que `profiles`?
+### Why `profiles`?
 
-`auth.users` não deve ser consultada diretamente pelo client (dados sensíveis).
-Para mostrar nome/avatar de colaboradores e dono nos cursores e na lista,
-espelhamos o mínimo público em `public.profiles`, populado por trigger no signup.
+`auth.users` should not be queried directly by the client (sensitive data). To
+show collaborator and owner names/avatars in cursors and lists, we mirror the
+minimal public fields into `public.profiles`, populated by a trigger on signup.
 
 ## `profiles`
 
@@ -27,23 +27,23 @@ avatar_url  text
 created_at  timestamptz NOT NULL DEFAULT now()
 ```
 
-- 1:1 com `auth.users`.
-- Criada automaticamente por trigger `on_auth_user_created`.
+- 1:1 with `auth.users`.
+- Created automatically by the `on_auth_user_created` trigger.
 
 ## `documents`
 
 ```
 id          uuid        PK DEFAULT gen_random_uuid()
 owner_id    uuid        NOT NULL, FK → auth.users(id) ON DELETE CASCADE
-title       text        NOT NULL DEFAULT 'Sem título'
-content     jsonb       NOT NULL DEFAULT '{}'   -- documento JSON do Tiptap
+title       text        NOT NULL DEFAULT 'Untitled'
+content     jsonb       NOT NULL DEFAULT '{}'   -- Tiptap JSON document
 created_at  timestamptz NOT NULL DEFAULT now()
-updated_at  timestamptz NOT NULL DEFAULT now()   -- atualizado por trigger
+updated_at  timestamptz NOT NULL DEFAULT now()   -- maintained by trigger
 ```
 
-- `content` guarda o JSON do Tiptap (ver decisão em `01-architecture.md`).
-- `updated_at` mantido por trigger `BEFORE UPDATE` (ordena dashboard por recência).
-- Índice em `owner_id` (consultas do dashboard).
+- `content` holds the Tiptap JSON (see decision in `01-architecture.md`).
+- `updated_at` maintained by a `BEFORE UPDATE` trigger (orders the dashboard by recency).
+- Index on `owner_id` (dashboard queries).
 
 ## `document_collaborators`
 
@@ -55,51 +55,51 @@ created_at  timestamptz NOT NULL DEFAULT now()
 PRIMARY KEY (document_id, user_id)
 ```
 
-- O **owner** vive em `documents.owner_id` (não duplicado aqui).
-- Esta tabela lista os **convidados** e o papel deles.
-- `role`: `editor` pode escrever, `viewer` só lê. Validado via RLS.
-- Índice em `user_id` (listar "documentos compartilhados comigo").
+- The **owner** lives in `documents.owner_id` (not duplicated here).
+- This table lists the **invited** users and their role.
+- `role`: `editor` can write, `viewer` is read-only. Enforced via RLS.
+- Index on `user_id` (listing "documents shared with me").
 
-## Modelo de acesso
+## Access model
 
-Um usuário pode acessar um documento se:
+A user can access a document if:
 
-- é o `owner_id`, **ou**
-- existe linha em `document_collaborators` com aquele `user_id`.
+- they are the `owner_id`, **or**
+- a row exists in `document_collaborators` with that `user_id`.
 
-Escrita exige owner ou colaborador com `role = 'editor'`.
+Writing requires the owner or a collaborator with `role = 'editor'`.
 
-> Para evitar recursão entre as policies de `documents` e
-> `document_collaborators`, o teste de acesso fica numa função
-> `SECURITY DEFINER` (`public.can_access_document`), chamada pelas policies.
+> To avoid recursion between the `documents` and `document_collaborators`
+> policies, the access check lives in a `SECURITY DEFINER` function
+> (`public.can_access_document`), called by the policies.
 
-## Políticas RLS (resumo)
+## RLS policies (summary)
 
-RLS **habilitado** em todas as tabelas. Resumo da intenção (SQL completo nas
-migrations em `supabase/migrations/`):
+RLS is **enabled** on all tables. Intent summary below (full SQL in the
+migrations under `supabase/migrations/`):
 
 ### `profiles`
 
-- SELECT: qualquer usuário autenticado (precisa para exibir colaboradores).
-- UPDATE: só o próprio (`id = auth.uid()`).
-- INSERT: feito pelo trigger (service role); sem policy de insert pública.
+- SELECT: any authenticated user (needed to display collaborators).
+- UPDATE: only the owner (`id = auth.uid()`).
+- INSERT: done by the trigger (service role); no public insert policy.
 
 ### `documents`
 
-- SELECT: `owner_id = auth.uid()` OU é colaborador (via função de acesso).
+- SELECT: `owner_id = auth.uid()` OR is a collaborator (via the access function).
 - INSERT: `owner_id = auth.uid()`.
-- UPDATE: owner OU colaborador `editor`.
-- DELETE: só o owner.
+- UPDATE: owner OR `editor` collaborator.
+- DELETE: owner only.
 
 ### `document_collaborators`
 
-- SELECT: owner do documento OU o próprio colaborador (`user_id = auth.uid()`).
-- INSERT/DELETE: só o owner do documento (gerencia convites).
+- SELECT: the document owner OR the collaborator themselves (`user_id = auth.uid()`).
+- INSERT/DELETE: the document owner only (manages invites).
 
-## Trigger de signup (profiles)
+## Signup trigger (profiles)
 
 ```
--- pseudo: ao inserir em auth.users, cria linha em public.profiles
+-- pseudo: on insert into auth.users, create a row in public.profiles
 create function public.handle_new_user() returns trigger
   security definer set search_path = public as $$
 begin
@@ -118,7 +118,7 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 ```
 
-## Trigger de `updated_at`
+## `updated_at` trigger
 
 ```
 create function public.set_updated_at() returns trigger as $$
@@ -130,26 +130,26 @@ create trigger documents_set_updated_at
   for each row execute function public.set_updated_at();
 ```
 
-## Ordem das migrations (planejada)
+## Migration order (planned)
 
 ```
 supabase/migrations/
-├── 0001_profiles.sql            # tabela + trigger de signup + RLS
-├── 0002_documents.sql           # tabela + trigger updated_at + índices + RLS
-└── 0003_collaborators.sql       # tabela + função can_access_document + RLS
+├── 0001_profiles.sql            # table + signup trigger + RLS
+├── 0002_documents.sql           # table + updated_at trigger + indexes + RLS
+└── 0003_collaborators.sql       # table + can_access_document function + RLS
 ```
 
-## Tipos no front-end
+## Front-end types
 
-`lib/supabase/types.ts` será gerado via Supabase CLI:
+`lib/supabase/types.ts` will be generated via the Supabase CLI:
 
 ```
 supabase gen types typescript --linked > src/lib/supabase/types.ts
 ```
 
-E tipos de domínio derivados em `src/types/index.ts`.
+with derived domain types in `src/types/index.ts`.
 
-## Documentos relacionados
+## Related documents
 
-- [`00-overview.md`](./00-overview.md) — visão geral e escopo.
-- [`01-architecture.md`](./01-architecture.md) — arquitetura e responsabilidades.
+- [`00-overview.md`](./00-overview.md) — overview and scope.
+- [`01-architecture.md`](./01-architecture.md) — architecture and responsibilities.

@@ -1,59 +1,59 @@
-# DocSync — Visão Geral do Projeto
+# DocSync — Project Overview
 
-## O que é
+## What it is
 
-DocSync é um editor de texto colaborativo em tempo real. Vários usuários
-editam o mesmo documento simultaneamente, com cursores ao vivo, persistência
-automática e um assistente de IA (Claude) embutido no editor.
+DocSync is a real-time collaborative text editor. Multiple users edit the same
+document simultaneously, with live cursors, automatic persistence, and an AI
+assistant (Claude) embedded in the editor.
 
-Projeto de portfólio inspirado em casos de uso reais de _AI workspaces_
-corporativos (ex.: Pasito — workspace de IA para benefícios corporativos).
+Portfolio project inspired by real-world corporate _AI workspace_ use cases
+(e.g. Pasito — an AI workspace for corporate benefits).
 
-## Objetivos
+## Goals
 
-- Demonstrar domínio de colaboração em tempo real (CRDT via Yjs).
-- Integrar editor rico (Tiptap) com sincronização e persistência separadas.
-- Mostrar uso de IA assistiva contextual dentro de um produto real.
-- Código limpo, tipado e arquitetura clara o suficiente para servir de referência.
+- Demonstrate command of real-time collaboration (CRDT via Yjs).
+- Integrate a rich editor (Tiptap) with separate sync and persistence layers.
+- Show contextual, assistive AI inside a real product.
+- Clean, typed code with an architecture clear enough to serve as a reference.
 
 ## Stack
 
-| Camada            | Tecnologia                          |
-| ----------------- | ----------------------------------- |
-| Framework         | Next.js (App Router) + TypeScript   |
-| Editor            | Tiptap                              |
-| Colaboração       | Yjs + y-websocket                   |
-| Auth + Persistência | Supabase (Postgres + Auth)        |
-| IA                | Claude API (`@anthropic-ai/sdk`)    |
-| UI                | Tailwind CSS + shadcn/ui            |
+| Layer               | Technology                          |
+| ------------------- | ----------------------------------- |
+| Framework           | Next.js (App Router) + TypeScript   |
+| Editor              | Tiptap                              |
+| Collaboration       | Yjs + y-websocket                   |
+| Auth + Persistence  | Supabase (Postgres + Auth)          |
+| AI                  | Claude API (`@anthropic-ai/sdk`)    |
+| UI                  | Tailwind CSS + shadcn/ui            |
 
-## Funcionalidades (MVP)
+## Features (MVP)
 
-1. **Autenticação** — email/senha + OAuth via Supabase Auth.
-2. **Dashboard** — lista documentos do usuário, criar/abrir/excluir.
-3. **Editor colaborativo** — Tiptap + Yjs, múltiplos usuários ao vivo.
-4. **Cursores de colaboradores** — presença e seleção em tempo real.
-5. **Auto-save** — debounce, persiste JSON do Tiptap no Supabase.
-6. **Assistente de IA** — seleciona texto → Claude sugere → insere no editor.
+1. **Authentication** — email/password + OAuth via Supabase Auth.
+2. **Dashboard** — lists the user's documents; create/open/delete.
+3. **Collaborative editor** — Tiptap + Yjs, multiple live users.
+4. **Collaborator cursors** — real-time presence and selection.
+5. **Autosave** — debounced; persists the Tiptap JSON to Supabase.
+6. **AI assistant** — select text → Claude suggests → inserted into the editor.
 
-## Fora do escopo (MVP)
+## Out of scope (MVP)
 
-- Versionamento/histórico de revisões.
-- Comentários e sugestões (track changes).
-- Exportação (PDF/Markdown).
-- Permissões granulares por bloco.
-- Times/organizações (apenas owner + colaboradores diretos).
+- Versioning / revision history.
+- Comments and suggestions (track changes).
+- Export (PDF/Markdown).
+- Block-level granular permissions.
+- Teams/organizations (owner + direct collaborators only).
 
-## Fluxo do usuário
+## User flow
 
-1. Login via Supabase Auth.
-2. Dashboard lista documentos do usuário.
-3. Abre `/doc/[id]` → carrega conteúdo do Supabase.
-4. Conecta ao y-websocket para colaboração ao vivo.
-5. Edita → auto-save no Supabase com debounce.
-6. Chama IA → Claude responde → conteúdo inserido no editor.
+1. Sign in via Supabase Auth.
+2. Dashboard lists the user's documents.
+3. Open `/doc/[id]` → load content from Supabase.
+4. Connect to y-websocket for live collaboration.
+5. Edit → debounced autosave to Supabase.
+6. Call the AI → Claude responds → content inserted into the editor.
 
-## Documentos relacionados
+## Related documents
 
-- [`01-architecture.md`](./01-architecture.md) — arquitetura e responsabilidades.
-- [`02-database.md`](./02-database.md) — schema do Supabase e RLS.
+- [`01-architecture.md`](./01-architecture.md) — architecture and responsibilities.
+- [`02-database.md`](./02-database.md) — Supabase schema and RLS.

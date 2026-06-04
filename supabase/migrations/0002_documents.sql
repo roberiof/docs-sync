@@ -4,7 +4,7 @@
 create table public.documents (
   id         uuid primary key default gen_random_uuid(),
   owner_id   uuid not null references auth.users (id) on delete cascade,
-  title      text not null default 'Sem título',
+  title      text not null default 'Untitled',
   content    jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
