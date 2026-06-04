@@ -1,4 +1,4 @@
-import { PenLine } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 
 /** Decorative collaborator cursor: pointer + name pill. */
 function Cursor({ name, color, className }: { name: string; color: string; className?: string }) {
@@ -56,9 +56,7 @@ export function AuthBrandPanel() {
       <div className="relative flex w-full max-w-md flex-col gap-9">
         {/* wordmark */}
         <div className="auth-rise flex items-center gap-2.5 text-white">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25 backdrop-blur">
-            <PenLine className="size-4.5" strokeWidth={2.2} />
-          </span>
+          <BrandMark className="size-9 rounded-[9px] ring-1 ring-white/25" />
           <span className="font-serif text-2xl tracking-tight">DocSync</span>
         </div>
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { LogOut, PenLine } from "lucide-react";
+import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { useTransition } from "react";
 
+import { BrandMark } from "@/components/BrandMark";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -31,9 +32,7 @@ export function TopBar({ name, email, avatarUrl }: Props) {
     <header className="border-border bg-background/80 sticky top-0 z-20 border-b backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
         <Link href="/dashboard" className="text-foreground flex items-center gap-2.5">
-          <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
-            <PenLine className="size-4" strokeWidth={2.2} />
-          </span>
+          <BrandMark className="size-8" />
           <span className="font-serif text-xl tracking-tight">DocSync</span>
         </Link>
 
