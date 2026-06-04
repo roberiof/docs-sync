@@ -41,23 +41,25 @@ When you touch routing, data fetching, caching, navigation, or styling, **open t
 
 ## Architecture
 
-Feature-first, with the `app/` directory kept thin (routing only). Co-locate by feature; promote to shared only on the second use.
+Module-first. `app/` stays thin (routing only); feature code lives under
+`src/modules/<module>/`. Shared, cross-module code is promoted to the top-level
+folders. **Full convention: [`docs/folder-structure.md`](docs/folder-structure.md).**
 
 ```
 src/
 ├── app/                      # ROUTING ONLY — layout/page/loading/error, route handlers
-│   ├── (marketing)/          # route groups for distinct layouts (no URL segment)
-│   ├── (app)/                # authed app shell (dashboard, /doc/[id])
+│   ├── (auth)/               # route groups for distinct layouts (no URL segment)
 │   ├── api/                  # route handlers (e.g. Claude AI — server only)
 │   ├── layout.tsx            # root layout (Server Component)
+│   ├── icon.svg              # app favicon
 │   └── globals.css           # Tailwind entry + @theme tokens
-├── features/                 # self-contained feature modules (documents, editor, auth, …)
-│   └── <feature>/
-│       ├── components/       # feature UI (Server by default)
+├── modules/                  # self-contained feature modules (auth, documents, editor, …)
+│   └── <module>/
+│       ├── components/       # module UI (Server by default)
 │       ├── actions.ts        # 'use server' — mutations (Server Actions)
 │       ├── queries.ts        # data reads ('use cache' where cacheable)
-│       ├── hooks/            # 'use client' hooks for this feature
-│       └── schema.ts         # zod schemas / validation
+│       ├── hooks/            # 'use client' hooks for this module
+│       └── utils/            # module-local helpers
 ├── components/
 │   └── ui/                   # shared presentational primitives (Button, Input, Card)
 ├── lib/
@@ -68,11 +70,13 @@ src/
 └── proxy.ts                  # ex-"middleware" — Supabase session refresh + auth redirects
 ```
 
-Rules:
+Rules (full tree in [`docs/folder-structure.md`](docs/folder-structure.md)):
 
-- **`app/` is for routing.** A `page.tsx` should compose feature components and pass data down, not hold business logic or large JSX.
-- **Promote on second use.** A component lives in its `features/<feature>/components/` until a second feature needs it; then it moves to `components/ui/` (if presentational) or `components/` (if composed).
-- **No barrel `index.ts` re-export files.** Import from the concrete path — keeps the client/server boundary legible and avoids accidental bundle bloat.
+- **`app/` is for routing.** A `page.tsx` composes module components and passes data down — no business logic or large JSX.
+- **Module names** are lowerCase / camelCase (e.g. `auth`, `documents`).
+- **Promote on second use.** Code used by one module stays in `modules/<module>/`. Used by two+ modules → lift to the top level (`components/ui` if presentational; `lib`/`utils`/`hooks` otherwise).
+- **No per-module API layer** — data access goes through `lib/supabase` plus the module's `actions.ts` / `queries.ts`.
+- Create top-level folders (`api/`, `config/`, `styles/`, `utils/`, `hooks/`) only when first used — don't scaffold empty trees.
 
 ## Server vs Client Components
 
@@ -85,8 +89,8 @@ Default to **Server Components**. Reach for `'use client'` only when you need st
 
 ## Data fetching
 
-- **Read** in Server Components — `await` a query function from `features/<feature>/queries.ts`. Cache stable reads with `'use cache'`; leave fresh-per-request data uncached and stream it under `<Suspense>`.
-- **Mutate** with Server Actions — `'use server'` functions in `features/<feature>/actions.ts`. **Verify auth/authz inside every action** (they are reachable by direct POST), then `revalidatePath`/`revalidateTag`.
+- **Read** in Server Components — `await` a query function from `modules/<module>/queries.ts`. Cache stable reads with `'use cache'`; leave fresh-per-request data uncached and stream it under `<Suspense>`.
+- **Mutate** with Server Actions — `'use server'` functions in `modules/<module>/actions.ts`. **Verify auth/authz inside every action** (they are reachable by direct POST), then `revalidatePath`/`revalidateTag`.
 - **Client reads** (when truly needed): pass a Server-initiated promise down and resolve with React's `use()` under `<Suspense>`. Reach for SWR/React Query only for genuinely client-driven, interactive data.
 - Fire independent requests in parallel (`Promise.all`); only chain when one depends on another.
 
@@ -116,6 +120,6 @@ Default to **Server Components**. Reach for `'use client'` only when you need st
 
 - **Files:** components `PascalCase.tsx`; hooks `useThing.ts`; everything else `kebab-case.ts`.
 - **Components:** one component per file; props typed with an explicit `type Props`; prefer named exports (default export only where Next requires it — `page`/`layout`/`loading`/`error`).
-- **Types:** no `any`; model domain types in the feature's `types.ts`; validate external input with zod at the boundary.
+- **Types:** no `any`; model domain types in the module's `types.ts` (shared ones in `src/types`); validate external input with zod at the boundary.
 - **Imports:** always `@/...`, never deep relative `../../..`.
 - After meaningful changes run `pnpm lint` and `pnpm format`, and (when behavior changed) verify in the running app.

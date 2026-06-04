@@ -1,6 +1,6 @@
 import { PenLine } from "lucide-react";
 
-import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
+import { AuthBrandPanel } from "@/modules/auth/components/AuthBrandPanel";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
