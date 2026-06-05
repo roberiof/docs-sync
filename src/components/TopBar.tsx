@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useTransition } from "react";
 
 import { BrandMark } from "@/components/BrandMark";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { getUserColor } from "@/lib/utils/colors";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,15 +19,15 @@ import {
 import { signOut } from "@/modules/auth/actions";
 
 type Props = {
+  userId: string;
   name: string | null;
   email: string | null;
   avatarUrl: string | null;
 };
 
-export function TopBar({ name, email, avatarUrl }: Props) {
+export function TopBar({ userId, name, email, avatarUrl }: Props) {
   const [pending, startTransition] = useTransition();
   const label = name || email || "Account";
-  const initial = label.charAt(0).toUpperCase();
 
   return (
     <header className="border-border bg-background/80 sticky top-0 z-20 border-b backdrop-blur">
@@ -41,12 +42,12 @@ export function TopBar({ name, email, avatarUrl }: Props) {
             aria-label="Account menu"
             className="ring-offset-background focus-visible:ring-ring rounded-full focus-visible:ring-2 focus-visible:outline-none"
           >
-            <Avatar className="size-9">
-              {avatarUrl && <AvatarImage src={avatarUrl} alt={label} />}
-              <AvatarFallback className="bg-ultramarine-100 text-primary text-sm font-semibold">
-                {initial}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              name={label}
+              color={getUserColor(userId)}
+              imageUrl={avatarUrl}
+              className="size-9 text-sm"
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuGroup>

@@ -21,6 +21,7 @@ async function AppHeader() {
 
   return (
     <TopBar
+      userId={user?.id ?? ""}
       name={profile?.full_name ?? null}
       email={profile?.email ?? user?.email ?? null}
       avatarUrl={profile?.avatar_url ?? null}
