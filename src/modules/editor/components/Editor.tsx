@@ -11,6 +11,7 @@ import type { WebsocketProvider } from "y-websocket";
 import type { User } from "@/lib/yjs/provider";
 import type { Json } from "@/lib/supabase/types";
 import { renameDocument } from "@/modules/documents/actions";
+import { AiAssistant } from "@/modules/editor/components/AiAssistant";
 import { CollaboratorsCursors } from "@/modules/editor/components/CollaboratorsCursors";
 import { Toolbar } from "@/modules/editor/components/Toolbar";
 import { useAutosave } from "@/modules/editor/hooks/useAutosave";
@@ -204,6 +205,7 @@ export function Editor({ docId, initialTitle, initialContent, ydoc, provider, us
 
         {/* The white page sheet (content only). */}
         <div className="border-border mt-3 rounded-xl border bg-white px-8 py-12 shadow-sm">
+          {editor && <AiAssistant editor={editor} />}
           <EditorContent editor={editor} />
         </div>
       </div>
