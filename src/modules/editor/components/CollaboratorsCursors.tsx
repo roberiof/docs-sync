@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { WebsocketProvider } from "y-websocket";
+import type { SupabaseProvider } from "@/lib/yjs/supabase-provider";
 
 import type { User } from "@/lib/yjs/provider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -12,7 +12,7 @@ type Collaborator = User & {
 };
 
 type Props = {
-  provider?: WebsocketProvider;
+  provider?: SupabaseProvider;
 };
 
 export function CollaboratorsCursors({ provider }: Props) {

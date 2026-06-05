@@ -6,7 +6,7 @@ import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { useEffect, useRef, useState } from "react";
 import type * as Y from "yjs";
-import type { WebsocketProvider } from "y-websocket";
+import type { SupabaseProvider } from "@/lib/yjs/supabase-provider";
 
 import type { User } from "@/lib/yjs/provider";
 import type { Json } from "@/lib/supabase/types";
@@ -47,7 +47,7 @@ type Props = {
   initialTitle: string;
   initialContent: Json;
   ydoc?: Y.Doc;
-  provider?: WebsocketProvider;
+  provider?: SupabaseProvider;
   user?: User;
 };
 
