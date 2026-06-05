@@ -1,18 +1,52 @@
 import { createClient } from "@/lib/supabase/server";
 import type { CollaboratorWithProfile, Document, Profile } from "@/types";
 
-export type DocumentListItem = Pick<Document, "id" | "title" | "updated_at">;
+export type DocumentListItem = Pick<Document, "id" | "title" | "updated_at" | "owner_id"> & {
+  /** True when the current user owns the document (vs. shared with them). */
+  isMine: boolean;
+  /** The other owner's public profile — null when the document is the user's own. */
+  owner: Pick<Profile, "full_name" | "avatar_url" | "email"> | null;
+};
 
 /** Documents the current user can see (owner + collaborator), newest first. RLS-scoped. */
 export async function listMyDocuments(): Promise<DocumentListItem[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("documents")
-    .select("id, title, updated_at")
-    .order("updated_at", { ascending: false });
+
+  const [
+    {
+      data: { user },
+    },
+    { data, error },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("documents")
+      .select("id, title, updated_at, owner_id")
+      .order("updated_at", { ascending: false }),
+  ]);
 
   if (error) throw error;
-  return data ?? [];
+  const docs = data ?? [];
+
+  // Resolve profiles only for documents owned by someone else (shared with me).
+  const otherOwnerIds = [
+    ...new Set(docs.filter((d) => d.owner_id !== user?.id).map((d) => d.owner_id)),
+  ];
+
+  let ownerById = new Map<string, Pick<Profile, "full_name" | "avatar_url" | "email">>();
+  if (otherOwnerIds.length) {
+    const { data: profiles, error: pErr } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, email")
+      .in("id", otherOwnerIds);
+    if (pErr) throw pErr;
+    ownerById = new Map((profiles ?? []).map((p) => [p.id, p]));
+  }
+
+  return docs.map((doc) => {
+    const isMine = doc.owner_id === user?.id;
+    return { ...doc, isMine, owner: isMine ? null : (ownerById.get(doc.owner_id) ?? null) };
+  });
 }
 
 /** A single document by id, or null if not found / not accessible (RLS). */

@@ -1,11 +1,13 @@
 "use client";
 
-import { FileText, MoreHorizontal, Trash2 } from "lucide-react";
+import { Crown, FileText, MoreHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { getUserColor } from "@/lib/utils/colors";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +31,8 @@ export function DocCard({ doc }: { doc: DocumentListItem }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
+  const ownerName = doc.owner?.full_name?.trim() || doc.owner?.email?.split("@")[0] || "Someone";
+
   function handleDelete() {
     startTransition(async () => {
       try {
@@ -51,6 +55,25 @@ export function DocCard({ doc }: { doc: DocumentListItem }) {
         <p className="text-muted-foreground mt-1 text-sm">
           Edited {formatRelativeTime(doc.updated_at)}
         </p>
+
+        {doc.isMine ? (
+          <span className="text-muted-foreground mt-3 inline-flex items-center gap-1.5 text-xs font-medium">
+            <Crown className="size-3.5 text-amber-500" />
+            Owned by you
+          </span>
+        ) : (
+          <span className="text-muted-foreground mt-3 inline-flex items-center gap-1.5 text-xs">
+            <UserAvatar
+              name={ownerName}
+              color={getUserColor(doc.owner_id)}
+              imageUrl={doc.owner?.avatar_url}
+              className="size-4"
+            />
+            <span className="truncate">
+              Shared by <span className="text-foreground font-medium">{ownerName}</span>
+            </span>
+          </span>
+        )}
       </Link>
 
       <DropdownMenu>
