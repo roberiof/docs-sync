@@ -59,6 +59,7 @@ export function CollaboratorsCursors({ provider }: Props) {
               <UserAvatar
                 name={collab.name || "Anonymous"}
                 color={collab.color}
+                imageUrl={collab.avatarUrl}
                 className="size-6 cursor-default"
               />
             }

@@ -1,13 +1,15 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 type Props = {
   ownerName: string | null;
   ownerEmail: string;
   ownerColor: string;
+  ownerAvatarUrl?: string | null;
 };
 
 /** Shown to non-owners: a compact chip naming who shared the document. */
-export function GuestBanner({ ownerName, ownerEmail, ownerColor }: Props) {
+export function GuestBanner({ ownerName, ownerEmail, ownerColor, ownerAvatarUrl }: Props) {
   const name = ownerName?.trim() || ownerEmail.split("@")[0];
 
   return (
@@ -15,12 +17,12 @@ export function GuestBanner({ ownerName, ownerEmail, ownerColor }: Props) {
       <TooltipTrigger
         render={
           <div className="border-border flex cursor-default items-center gap-2 rounded-full border bg-white py-1 pr-3 pl-1.5 text-sm shadow-sm">
-            <div
-              className="flex size-6 items-center justify-center rounded-full text-[0.65rem] font-semibold text-white"
-              style={{ backgroundColor: ownerColor }}
-            >
-              {name[0]?.toUpperCase() ?? "?"}
-            </div>
+            <UserAvatar
+              name={name}
+              color={ownerColor}
+              imageUrl={ownerAvatarUrl}
+              className="size-6"
+            />
             <span className="text-muted-foreground">
               Shared by <span className="text-foreground font-medium">{name}</span>
             </span>

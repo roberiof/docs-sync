@@ -38,7 +38,7 @@ async function DocContent({ params }: { params: Promise<{ id: string }> }) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, avatar_url")
     .eq("id", user.id)
     .single();
 
@@ -77,6 +77,7 @@ async function DocContent({ params }: { params: Promise<{ id: string }> }) {
               ownerName={owner?.full_name ?? null}
               ownerEmail={owner?.email ?? ""}
               ownerColor={getUserColor(doc.owner_id)}
+              ownerAvatarUrl={owner?.avatar_url ?? null}
             />
           </div>
         )}
@@ -88,6 +89,7 @@ async function DocContent({ params }: { params: Promise<{ id: string }> }) {
         user={{
           name: displayName,
           color: getUserColor(user.id),
+          avatarUrl: profile?.avatar_url ?? null,
         }}
       />
     </div>

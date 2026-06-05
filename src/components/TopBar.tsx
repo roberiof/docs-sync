@@ -1,8 +1,8 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { LogOut, UserPen } from "lucide-react";
 import Link from "next/link";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { BrandMark } from "@/components/BrandMark";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/modules/auth/actions";
+import { EditProfileDialog } from "@/modules/profile/components/EditProfileDialog";
 
 type Props = {
   userId: string;
@@ -27,6 +28,7 @@ type Props = {
 
 export function TopBar({ userId, name, email, avatarUrl }: Props) {
   const [pending, startTransition] = useTransition();
+  const [editOpen, setEditOpen] = useState(false);
   const label = name || email || "Account";
 
   return (
@@ -59,6 +61,11 @@ export function TopBar({ userId, name, email, avatarUrl }: Props) {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <UserPen className="size-4" />
+              Edit profile
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
               disabled={pending}
@@ -69,6 +76,15 @@ export function TopBar({ userId, name, email, avatarUrl }: Props) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <EditProfileDialog
+          userId={userId}
+          name={name}
+          email={email}
+          avatarUrl={avatarUrl}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
       </div>
     </header>
   );

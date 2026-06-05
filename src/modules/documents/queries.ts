@@ -58,11 +58,11 @@ export async function getDocumentCollaborators(
 /** The owner's public profile (for the "shared with you" guest banner). */
 export async function getDocumentOwner(
   ownerId: string,
-): Promise<Pick<Profile, "full_name" | "email"> | null> {
+): Promise<Pick<Profile, "full_name" | "email" | "avatar_url"> | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name, email")
+    .select("full_name, email, avatar_url")
     .eq("id", ownerId)
     .maybeSingle();
 

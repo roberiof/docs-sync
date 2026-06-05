@@ -6,6 +6,7 @@ const YWS_URL = process.env.NEXT_PUBLIC_YWS_URL || "ws://localhost:1234";
 export type User = {
   name: string | null;
   color: string;
+  avatarUrl?: string | null;
 };
 
 export function createYProvider(roomId: string, user: User) {
@@ -17,6 +18,7 @@ export function createYProvider(roomId: string, user: User) {
   provider.awareness.setLocalStateField("user", {
     name: user.name || "Anonymous",
     color: user.color,
+    avatarUrl: user.avatarUrl ?? null,
   });
 
   return { ydoc, provider };
