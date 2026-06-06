@@ -5,7 +5,14 @@ import {
   encodeAwarenessUpdate,
   removeAwarenessStates,
 } from "y-protocols/awareness";
-import { fromBase64, toBase64 } from "lib0/buffer";
+const toBase64 = (buf: Uint8Array): string =>
+  btoa(String.fromCharCode(...buf));
+const fromBase64 = (str: string): Uint8Array =>
+  new Uint8Array(
+    atob(str)
+      .split("")
+      .map((c) => c.charCodeAt(0)),
+  );
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/client";
