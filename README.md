@@ -7,12 +7,11 @@ Multiple people edit the same doc at once — cursors, selections, and keystroke
 ## Features
 
 - ✍️ **Rich text editor** — Tiptap + ProseMirror, with a formatting toolbar
-- 🔄 **Real-time collaboration** — concurrent editing over Yjs CRDTs and `y-websocket`; no merge conflicts, ever
+- 🔄 **Real-time collaboration** — concurrent editing over Yjs CRDTs synced through Supabase Realtime; no merge conflicts, ever, and no extra server to run
 - 👥 **Live presence** — see collaborators' cursors and selections as they move
 - 🤖 **AI assistant** — `improve`, `summarize`, and `continue` on selected text (server-side, key never touches the browser)
 - 🔐 **Auth + access control** — Supabase Auth with Postgres **Row Level Security** as the real security boundary
 - 💾 **Autosave** — edits persist without a save button
-- 🌓 **Dark mode** — `prefers-color-scheme` aware, theme-token driven
 - ⚡ **Instant navigation** — Next.js Cache Components, Suspense streaming, partial prefetch
 
 ## Stack
@@ -23,7 +22,7 @@ Multiple people edit the same doc at once — cursors, selections, and keystroke
 | UI runtime    | React 19 (Server Components by default)               |
 | Styling       | Tailwind CSS v4 (config-via-CSS, `@theme` tokens)     |
 | Editor        | Tiptap 3 + ProseMirror                                |
-| Realtime      | Yjs + `y-websocket` (CRDT sync)                        |
+| Realtime      | Yjs CRDTs over Supabase Realtime broadcast            |
 | Data / auth   | Supabase (Postgres + RLS, `@supabase/ssr`)            |
 | AI            | NVIDIA NIM (`meta/llama-3.3-70b-instruct`, OpenAI-compatible API) |
 | Language      | TypeScript (strict)                                   |
@@ -45,6 +44,7 @@ src/
 │   └── profile/      # profile editing + avatar upload
 ├── lib/
 │   ├── supabase/     # server · client · proxy · generated types
+│   ├── yjs/          # Yjs provider over Supabase Realtime broadcast
 │   └── ai/           # NIM client + suggest()
 ├── components/ui/    # shared presentational primitives
 ├── types/            # domain types derived from DB rows
@@ -57,14 +57,13 @@ src/
 
 See [`CLAUDE.md`](CLAUDE.md) and [`docs/folder-structure.md`](docs/folder-structure.md) for full conventions.
 
-> ⚠️ **This is not the Next.js in your training data.** Cache Components is on, `fetch` is uncached by default, `params`/`searchParams` are Promises, and middleware is now `proxy.ts`. Read [`AGENTS.md`](AGENTS.md) before writing route or data code.
 
 ## Getting started
 
 ### Prerequisites
 
 - Node 20+ and [pnpm](https://pnpm.io)
-- A [Supabase](https://supabase.com) project
+- A [Supabase](https://supabase.com) project (Realtime enabled — it powers collaboration)
 - An [NVIDIA NIM](https://build.nvidia.com) API key (free tier)
 
 ### Setup
@@ -82,7 +81,6 @@ cp .env.example .env.local   # then fill in the values
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | Supabase anon key                             |
 | `SUPABASE_SERVICE_ROLE_KEY`      | Server-only; bypasses RLS — never expose      |
 | `NVIDIA_API_KEY`                 | NIM key; used only by the `/api/ai` route     |
-| `NEXT_PUBLIC_YWS_URL`            | y-websocket URL (e.g. `ws://localhost:1234`)  |
 
 ### Database
 
@@ -94,14 +92,11 @@ pnpm db:types   # regenerate src/lib/supabase/types.ts
 
 ### Run
 
-Two processes — the app and the collaboration server:
-
 ```bash
-pnpm yws    # y-websocket server (collaboration backend)
-pnpm dev    # Next.js app
+pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). Collaboration runs through Supabase Realtime — no separate server to start.
 
 ## Scripts
 
@@ -110,21 +105,17 @@ Open [http://localhost:3000](http://localhost:3000).
 | `pnpm dev`         | Dev server                                |
 | `pnpm build`       | Production build                          |
 | `pnpm start`       | Serve production build                    |
-| `pnpm yws`         | y-websocket collaboration server          |
 | `pnpm lint`        | ESLint                                    |
 | `pnpm type-check`  | `tsc --noEmit`                            |
 | `pnpm format`      | Prettier write                            |
 | `pnpm db:push`     | Apply Supabase migrations                 |
 | `pnpm db:types`    | Regenerate DB types                       |
 
-## How collaboration works
+## How real-time collaboration works
 
-Each open document gets a shared Yjs document synced through `y-websocket`. Edits become CRDT operations that merge deterministically — every client converges to the same state regardless of order or latency. Tiptap binds the editor to the Yjs doc; presence (cursors, selections) rides the same channel. Document snapshots persist to Supabase via autosave.
+Each open document gets a shared Yjs document synced over a **Supabase Realtime** channel — no standalone websocket server. A custom provider ([`src/lib/yjs/supabase-provider.ts`](src/lib/yjs/supabase-provider.ts)) broadcasts incremental Y.Doc and awareness updates, and replays full state to late joiners. Edits become CRDT operations that merge deterministically — every client converges to the same state regardless of order or latency. Tiptap binds the editor to the Yjs doc; presence (cursors, selections) rides the same channel. Document snapshots persist to Supabase via autosave.
 
 ## How AI works
 
 Select text, pick an action (`improve`, `summarize`, `continue`). The client POSTs to `/api/ai`, which verifies the Supabase session, validates input, then calls NVIDIA NIM server-side. The model id and `baseURL` live in [`src/lib/ai/ai.ts`](src/lib/ai/ai.ts) — swap in any OpenAI-compatible provider by editing that one file.
 
----
-
-Built with Next.js 16, React 19, and a lot of CRDTs.
