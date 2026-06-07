@@ -12,10 +12,16 @@ import OpenAI from "openai";
  * Moving to Claude means swapping in `@anthropic-ai/sdk` and adding
  * `cache_control`. The `suggest()` contract stays the same either way.
  */
-const client = new OpenAI({
-  apiKey: process.env.NVIDIA_API_KEY,
-  baseURL: "https://integrate.api.nvidia.com/v1",
-});
+let _client: OpenAI | null = null;
+const getClient = () => {
+  if (!_client) {
+    _client = new OpenAI({
+      apiKey: process.env.NVIDIA_API_KEY,
+      baseURL: "https://integrate.api.nvidia.com/v1",
+    });
+  }
+  return _client;
+};
 
 // Free-tier model on NVIDIA NIM. Verify the current id in the NIM catalog
 // (model ids shift) — https://build.nvidia.com.
@@ -47,7 +53,7 @@ export async function suggest({
   action: AiAction;
   text: string;
 }): Promise<string> {
-  const completion = await client.chat.completions.create({
+  const completion = await getClient().chat.completions.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
     messages: [
