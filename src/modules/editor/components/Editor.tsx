@@ -7,6 +7,7 @@ import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { useEffect, useRef, useState } from "react";
 import type * as Y from "yjs";
 import type { SupabaseProvider } from "@/lib/yjs/supabase-provider";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import type { User } from "@/lib/yjs/provider";
 import type { Json } from "@/lib/supabase/types";
@@ -53,6 +54,16 @@ type Props = {
 
 export function Editor({ docId, initialTitle, initialContent, ydoc, provider, user }: Props) {
   const [title, setTitle] = useState(initialTitle);
+  const [synced, setSynced] = useState(() => !provider || provider.synced);
+
+  useEffect(() => {
+    if (!provider || provider.synced) return;
+    const onSync = (isSynced: boolean) => {
+      if (isSynced) setSynced(true);
+    };
+    provider.on("sync", onSync);
+    return () => provider.off("sync", onSync);
+  }, [provider]);
 
   const extensions = [
     StarterKit.configure({
@@ -205,8 +216,20 @@ export function Editor({ docId, initialTitle, initialContent, ydoc, provider, us
 
         {/* The white page sheet (content only). */}
         <div className="border-border mt-3 rounded-xl border bg-white px-8 py-12 shadow-sm">
-          {editor && <AiAssistant editor={editor} />}
-          <EditorContent editor={editor} />
+          {!synced ? (
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-11/12" />
+              <Skeleton className="h-4 w-10/12" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-9/12" />
+            </div>
+          ) : (
+            <>
+              {editor && <AiAssistant editor={editor} />}
+              <EditorContent editor={editor} />
+            </>
+          )}
         </div>
       </div>
     </div>

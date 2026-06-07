@@ -1,4 +1,3 @@
-import { BrandMark } from "@/components/BrandMark";
 import { AuthBrandPanel } from "@/modules/auth/components/AuthBrandPanel";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
