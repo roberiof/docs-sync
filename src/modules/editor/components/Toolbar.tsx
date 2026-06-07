@@ -1,6 +1,6 @@
 "use client";
 
-import type { Editor } from "@tiptap/react";
+import { type Editor, useEditorState } from "@tiptap/react";
 import {
   Bold,
   Code,
@@ -21,78 +21,95 @@ import { cn } from "@/lib/utils";
 type ToolItem = {
   icon: ComponentType<{ className?: string }>;
   label: string;
-  isActive: () => boolean;
+  active: boolean;
   run: () => void;
 };
 
 export function Toolbar({ editor }: { editor: Editor }) {
+  const activeState = useEditorState({
+    editor,
+    selector: (ctx) => ({
+      bold: ctx.editor.isActive("bold"),
+      italic: ctx.editor.isActive("italic"),
+      strike: ctx.editor.isActive("strike"),
+      code: ctx.editor.isActive("code"),
+      codeBlock: ctx.editor.isActive("codeBlock"),
+      h1: ctx.editor.isActive("heading", { level: 1 }),
+      h2: ctx.editor.isActive("heading", { level: 2 }),
+      h3: ctx.editor.isActive("heading", { level: 3 }),
+      bulletList: ctx.editor.isActive("bulletList"),
+      orderedList: ctx.editor.isActive("orderedList"),
+      blockquote: ctx.editor.isActive("blockquote"),
+    }),
+  });
+
   const items: (ToolItem | "divider")[] = [
     {
       icon: Bold,
       label: "Bold",
-      isActive: () => editor.isActive("bold"),
+      active: activeState.bold,
       run: () => editor.chain().focus().toggleBold().run(),
     },
     {
       icon: Italic,
       label: "Italic",
-      isActive: () => editor.isActive("italic"),
+      active: activeState.italic,
       run: () => editor.chain().focus().toggleItalic().run(),
     },
     {
       icon: Strikethrough,
       label: "Strikethrough",
-      isActive: () => editor.isActive("strike"),
+      active: activeState.strike,
       run: () => editor.chain().focus().toggleStrike().run(),
     },
     {
       icon: Code,
       label: "Inline code",
-      isActive: () => editor.isActive("code"),
+      active: activeState.code,
       run: () => editor.chain().focus().toggleCode().run(),
     },
     {
       icon: SquareCode,
       label: "Code block",
-      isActive: () => editor.isActive("codeBlock"),
+      active: activeState.codeBlock,
       run: () => editor.chain().focus().toggleCodeBlock().run(),
     },
     "divider",
     {
       icon: Heading1,
       label: "Heading 1",
-      isActive: () => editor.isActive("heading", { level: 1 }),
+      active: activeState.h1,
       run: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
     },
     {
       icon: Heading2,
       label: "Heading 2",
-      isActive: () => editor.isActive("heading", { level: 2 }),
+      active: activeState.h2,
       run: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
     },
     {
       icon: Heading3,
       label: "Heading 3",
-      isActive: () => editor.isActive("heading", { level: 3 }),
+      active: activeState.h3,
       run: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
     },
     "divider",
     {
       icon: List,
       label: "Bullet list",
-      isActive: () => editor.isActive("bulletList"),
+      active: activeState.bulletList,
       run: () => editor.chain().focus().toggleBulletList().run(),
     },
     {
       icon: ListOrdered,
       label: "Ordered list",
-      isActive: () => editor.isActive("orderedList"),
+      active: activeState.orderedList,
       run: () => editor.chain().focus().toggleOrderedList().run(),
     },
     {
       icon: Quote,
       label: "Blockquote",
-      isActive: () => editor.isActive("blockquote"),
+      active: activeState.blockquote,
       run: () => editor.chain().focus().toggleBlockquote().run(),
     },
   ];
@@ -108,11 +125,11 @@ export function Toolbar({ editor }: { editor: Editor }) {
             type="button"
             aria-label={item.label}
             title={item.label}
-            aria-pressed={item.isActive()}
+            aria-pressed={item.active}
             onClick={item.run}
             className={cn(
               "text-muted-foreground hover:bg-ultramarine-50 hover:text-foreground flex size-8 items-center justify-center rounded-lg transition-colors",
-              item.isActive() && "bg-ultramarine-100 text-primary",
+              item.active && "bg-ultramarine-100 text-primary",
             )}
           >
             <item.icon className="size-4" />
