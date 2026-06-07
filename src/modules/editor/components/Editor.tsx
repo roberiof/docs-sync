@@ -210,7 +210,7 @@ export function Editor({ docId, initialTitle, initialContent, ydoc, provider, us
             <span className="text-muted-foreground w-16 shrink-0 pr-1 text-right text-xs">
               {STATUS_LABEL[status]}
             </span>
-            {provider && <CollaboratorsCursors provider={provider} />}
+            {provider && <CollaboratorsCursors provider={provider} currentUser={user} />}
           </div>
         </div>
 

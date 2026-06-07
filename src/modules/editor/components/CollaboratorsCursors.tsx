@@ -13,9 +13,10 @@ type Collaborator = User & {
 
 type Props = {
   provider?: SupabaseProvider;
+  currentUser?: User;
 };
 
-export function CollaboratorsCursors({ provider }: Props) {
+export function CollaboratorsCursors({ provider, currentUser }: Props) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export function CollaboratorsCursors({ provider }: Props) {
       states.forEach((state, clientID) => {
         const user = state.user as User | undefined;
         if (!user || clientID === provider.awareness.clientID) return;
+        if (currentUser?.name && user.name === currentUser.name) return;
         const key = `${user.color}|${user.name ?? ""}`;
         if (!byUser.has(key)) byUser.set(key, { ...user, clientID });
       });
