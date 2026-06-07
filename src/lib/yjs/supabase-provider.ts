@@ -179,6 +179,9 @@ export class SupabaseProvider {
       event: EVENT_SYNC_REPLY,
       payload: { update: toBase64(Y.encodeStateAsUpdate(this.ydoc)) },
     });
+    // New joiner only gets doc state via sync-reply; they won't see existing
+    // peers in CollaboratorsCursors unless peers also re-broadcast awareness.
+    this.broadcastAwareness([this.awareness.clientID]);
   }
 
   // --- awareness --------------------------------------------------------------

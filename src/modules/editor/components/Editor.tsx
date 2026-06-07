@@ -69,7 +69,7 @@ export function Editor({ docId, initialTitle, initialContent, ydoc, provider, us
       ? [
           CollaborationCaret.configure({
             provider,
-            user: { name: user.name || "Anonymous", color: user.color },
+            user: { name: user.name || "Anonymous", color: user.color, avatarUrl: user.avatarUrl },
           }),
         ]
       : []),

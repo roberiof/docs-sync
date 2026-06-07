@@ -26,12 +26,12 @@ export function UserAvatar({ name, color, imageUrl, className }: Props) {
         <img
           src={imageUrl}
           alt={name}
-          className={cn("ring-background block size-6 rounded-full object-cover ring-2", className)}
+          className={cn("block size-6 rounded-full object-cover", className)}
         />
       ) : (
         <span
           className={cn(
-            "ring-background flex size-6 items-center justify-center rounded-full text-[0.65rem] font-semibold text-white ring-2",
+            "flex size-6 items-center justify-center rounded-full text-[0.65rem] font-semibold text-white",
             className,
           )}
           style={{ backgroundColor: color }}
