@@ -86,6 +86,7 @@ async function DocContent({ params }: { params: Promise<{ id: string }> }) {
         docId={doc.id}
         initialTitle={doc.title}
         initialContent={doc.content}
+        ydocState={doc.ydoc_state}
         user={{
           name: displayName,
           color: getUserColor(user.id),

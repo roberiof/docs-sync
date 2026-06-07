@@ -11,13 +11,25 @@ type Props = {
   docId: string;
   initialTitle: string;
   initialContent: Json;
+  ydocState?: string | null;
   user: User;
 };
 
-export function EditorWithCollaboration({ docId, initialTitle, initialContent, user }: Props) {
+export function EditorWithCollaboration({
+  docId,
+  initialTitle,
+  initialContent,
+  ydocState,
+  user,
+}: Props) {
   // Construction is side-effect-free (socket stays closed); the effect below
   // owns the connection lifecycle.
-  const { ydoc, provider } = useMemo(() => createYProvider(docId, user), [docId, user]);
+  const { ydoc, provider } = useMemo(
+    () => createYProvider(docId, user, ydocState),
+    // ydocState is only used to seed the initial Y.Doc — ignore changes after mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [docId, user],
+  );
 
   useEffect(() => {
     provider.connect();

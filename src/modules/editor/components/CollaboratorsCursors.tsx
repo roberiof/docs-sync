@@ -46,7 +46,7 @@ export function CollaboratorsCursors({ provider, currentUser }: Props) {
     return () => {
       provider.awareness.off("change", updateCollaborators);
     };
-  }, [provider]);
+  }, [provider, currentUser]);
 
   if (!collaborators.length) return null;
 

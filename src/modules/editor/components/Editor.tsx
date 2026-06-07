@@ -123,7 +123,7 @@ export function Editor({ docId, initialTitle, initialContent, ydoc, provider, us
     };
   }, [editor, ydoc, provider, initialContent, initialTitle]);
 
-  const status = useAutosave(editor, docId);
+  const status = useAutosave(editor, docId, ydoc);
 
   // Collaborative title: bind the <input> to a shared Y.Text("title"), the same
   // way the body binds to the Y.Doc. Remote edits flow in via `observe`; local

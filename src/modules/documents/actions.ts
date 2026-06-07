@@ -41,10 +41,13 @@ export async function renameDocument(id: string, title: string) {
   revalidatePath("/dashboard");
 }
 
-/** Persist the editor's JSON snapshot. Called (debounced) from the editor. */
-export async function saveDocumentContent(id: string, content: Json) {
+/** Persist the editor's JSON snapshot and Yjs binary state. Called (debounced) from the editor. */
+export async function saveDocumentContent(id: string, content: Json, ydocState?: string) {
   const { supabase } = await requireUser();
-  const { error } = await supabase.from("documents").update({ content }).eq("id", id);
+  const { error } = await supabase
+    .from("documents")
+    .update({ content, ...(ydocState ? { ydoc_state: ydocState } : {}) })
+    .eq("id", id);
   if (error) throw error;
 }
 

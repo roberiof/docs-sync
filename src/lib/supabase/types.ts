@@ -43,6 +43,7 @@ export interface Database {
           owner_id: string;
           title: string;
           content: Json;
+          ydoc_state: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -51,6 +52,7 @@ export interface Database {
           owner_id: string;
           title?: string;
           content?: Json;
+          ydoc_state?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -59,6 +61,7 @@ export interface Database {
           owner_id?: string;
           title?: string;
           content?: Json;
+          ydoc_state?: string | null;
           created_at?: string;
           updated_at?: string;
         };
