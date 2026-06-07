@@ -1,5 +1,6 @@
 "use client";
 
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { Plus } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -16,7 +17,8 @@ export function NewDocButton() {
         startTransition(async () => {
           try {
             await createDocument();
-          } catch {
+          } catch (error) {
+            if (isRedirectError(error)) throw error;
             toast.error("Couldn't create the document.");
           }
         })
