@@ -89,6 +89,40 @@ export async function getDocumentCollaborators(
   return rows.map((row) => ({ ...row, profile: byId.get(row.user_id) ?? null }));
 }
 
+/**
+ * The current authenticated user plus the display name and avatar used to render
+ * the document viewer (live cursors, top bar). Null when signed out. Reads request
+ * cookies via the server client, so it must never live inside a cached scope.
+ */
+export async function getDocumentViewer(): Promise<{
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+} | null> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, avatar_url")
+    .eq("id", user.id)
+    .single();
+
+  // Display name for live cursors: profile name → auth metadata → email local
+  // part. Avoids the generic "Anonymous" label.
+  const displayName =
+    profile?.full_name?.trim() ||
+    (user.user_metadata?.full_name as string | undefined)?.trim() ||
+    user.email?.split("@")[0] ||
+    null;
+
+  return { userId: user.id, displayName, avatarUrl: profile?.avatar_url ?? null };
+}
+
 /** The owner's public profile (for the "shared with you" guest banner). */
 export async function getDocumentOwner(
   ownerId: string,
