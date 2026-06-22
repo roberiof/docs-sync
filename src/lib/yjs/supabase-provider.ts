@@ -119,12 +119,14 @@ export class SupabaseProvider {
       .on("broadcast", { event: EVENT_AWARENESS }, ({ payload }) =>
         this.applyRemoteAwareness(payload as { update?: string }),
       )
+      .on("presence", { event: "join" }, () => this.handlePresenceJoin())
       .on("presence", { event: "leave" }, ({ key }) => this.handlePresenceLeave(key));
 
     this.ydoc.on("update", this.handleDocUpdate);
     this.awareness.on("update", this.handleAwarenessUpdate);
 
-    channel.subscribe((status) => {
+    channel.subscribe((status, err) => {
+      console.log("[yjs] subscribe status", { status, err, me: this.awareness.clientID });
       if (status !== "SUBSCRIBED") return;
       this.subscribed = true;
       // Ask peers for current state, then declare synced after a short grace
@@ -141,10 +143,11 @@ export class SupabaseProvider {
     if (!this.channel) return;
     if (this.syncTimer) clearTimeout(this.syncTimer);
     this.ydoc.off("update", this.handleDocUpdate);
+    // Remove our state with origin `null` (not `this`) while still subscribed, so
+    // `handleAwarenessUpdate` runs and broadcasts the `removed` set — peers drop us
+    // immediately instead of waiting on the (unreliable on SPA nav) presence "leave".
+    removeAwarenessStates(this.awareness, [this.awareness.clientID], null);
     this.awareness.off("update", this.handleAwarenessUpdate);
-    // Detached above, so this clears our local presence without broadcasting;
-    // peers learn we left via the channel's presence "leave" event.
-    removeAwarenessStates(this.awareness, [this.awareness.clientID], this);
     void this.supabase.removeChannel(this.channel);
     this.channel = null;
     this.subscribed = false;
@@ -195,7 +198,16 @@ export class SupabaseProvider {
   };
 
   private broadcastAwareness(clients: number[]) {
-    if (!this.subscribed || !this.channel || clients.length === 0) return;
+    if (!this.subscribed || !this.channel || clients.length === 0) {
+      console.log("[yjs] broadcastAwareness SKIPPED", {
+        subscribed: this.subscribed,
+        hasChannel: !!this.channel,
+        clients,
+        me: this.awareness.clientID,
+      });
+      return;
+    }
+    console.log("[yjs] broadcastAwareness SEND", { clients, me: this.awareness.clientID });
     void this.channel.send({
       type: "broadcast",
       event: EVENT_AWARENESS,
@@ -206,11 +218,23 @@ export class SupabaseProvider {
   private applyRemoteAwareness(payload: { update?: string }) {
     if (!payload?.update) return;
     applyAwarenessUpdate(this.awareness, fromBase64(payload.update), this);
+    console.log("[yjs] applyRemoteAwareness -> states now", {
+      me: this.awareness.clientID,
+      states: [...this.awareness.getStates().keys()],
+    });
+  }
+
+  private handlePresenceJoin() {
+    // A peer joined (e.g. someone rejoining the room). Re-announce ourselves so
+    // they see us even if their initial sync-request raced our subscribe.
+    console.log("[yjs] presence JOIN -> re-announce", { me: this.awareness.clientID });
+    this.broadcastAwareness([this.awareness.clientID]);
   }
 
   private handlePresenceLeave(key: string) {
     const clientID = Number(key);
     if (Number.isNaN(clientID)) return;
+    console.log("[yjs] presence LEAVE -> remove", { key: clientID, me: this.awareness.clientID });
     removeAwarenessStates(this.awareness, [clientID], this);
   }
 }

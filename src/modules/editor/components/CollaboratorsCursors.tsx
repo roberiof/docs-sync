@@ -9,6 +9,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 
 type Collaborator = User & {
   clientID: number;
+  lastUpdated: number;
 };
 
 type Props = {
@@ -24,8 +25,12 @@ export function CollaboratorsCursors({ provider, currentUser }: Props) {
 
     const updateCollaborators = () => {
       const states = provider.awareness.getStates();
-      // One entry per distinct person (same user across tabs shares a color +
-      // name), not per connection — avoids duplicate avatars.
+      const meta = provider.awareness.meta;
+      // One entry per distinct person (same user across tabs/sessions shares a
+      // color + name), not per connection — avoids duplicate avatars. When the
+      // same person has multiple entries (e.g. a stale ghost from a previous
+      // session lingering next to the live one), keep the freshest by
+      // `lastUpdated` so a dead connection never masks the active one.
       const byUser = new Map<string, Collaborator>();
 
       states.forEach((state, clientID) => {
@@ -33,7 +38,11 @@ export function CollaboratorsCursors({ provider, currentUser }: Props) {
         if (!user || clientID === provider.awareness.clientID) return;
         if (currentUser?.name && user.name === currentUser.name) return;
         const key = `${user.color}|${user.name ?? ""}`;
-        if (!byUser.has(key)) byUser.set(key, { ...user, clientID });
+        const lastUpdated = meta.get(clientID)?.lastUpdated ?? clientID;
+        const existing = byUser.get(key);
+        if (!existing || lastUpdated > existing.lastUpdated) {
+          byUser.set(key, { ...user, clientID, lastUpdated });
+        }
       });
 
       setCollaborators([...byUser.values()]);
